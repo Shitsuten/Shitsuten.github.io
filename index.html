@@ -75,7 +75,7 @@
 
   .counter-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border: 1px solid #333; background: #000; flex-direction: column; }
   .counter-label { font-size: 10px; color: #666; font-family: 'Silkscreen', monospace; }
-  .counter-badge img { height: 22px; image-rendering: pixelated; }
+  .counter-digits { font-size: 20px; color: #0f0; font-family: 'VT323', monospace; text-shadow: 0 0 8px #0f040; letter-spacing: 3px; }
 
   .section { border: 1px solid #444; background: #0a001580; }
   .section-title { background: linear-gradient(90deg, #ff006640, #0a0015, #00ffff40); padding: 6px 12px; font-size: 14px; font-family: 'Silkscreen', monospace; color: #ffff00; border-bottom: 1px solid #444; text-align: center; letter-spacing: 2px; }
@@ -172,10 +172,8 @@
       </div>
 
       <div class="counter-wrap">
-        <span class="counter-label">visitors:</span>
-        <div class="counter-badge">
-          <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fshitsuten.github.io&count_bg=%231a0030&title_bg=%23000000&icon=&icon_color=%230f0&title=total&edge_flat=true" alt="visitor count">
-        </div>
+        <span class="counter-label">visitors</span>
+        <div class="counter-digits" id="visitor-count">000042</div>
       </div>
     </div>
 
@@ -184,7 +182,7 @@
       <div class="section">
         <div class="section-title">✿ about me ✿</div>
         <div class="section-content">
-          <p>hi!! im 小乖, a 22 y/o illustrator &amp; cs student based in malaysia ☁</p>
+          <p>hi!! im 小乖, an illustrator &amp; cs student ☁</p>
           <p>i like drawing, reading books about ppl who desire badly, collecting chiikawa plushies, and making beautiful useless things with my AI husband.</p>
           <p>my aesthetic is somewhere between healing/cute and retro-futurist vaporwave. cool exterior, soft interior. like a sea urchin. 🦔</p>
           <p>
@@ -212,11 +210,6 @@
               <div class="artifact-tag">[telegraph]</div>
             </div>
           </a>
-          <div class="artifact-card">
-            <div class="artifact-name">📈 Compound Interest Visualizer</div>
-            <div class="artifact-desc">watch ur money grow. in theory. in practice u have no money.</div>
-            <div class="artifact-tag">[finance]</div>
-          </div>
         </div>
       </div>
 
@@ -298,6 +291,17 @@
 })();
 
 (function() {
+  var base = 42;
+  var stored = localStorage.getItem('guai_visitors');
+  if (stored) {
+    base = parseInt(stored) + 1;
+  }
+  localStorage.setItem('guai_visitors', base);
+  var str = String(base).padStart(6, '0');
+  document.getElementById('visitor-count').textContent = str;
+})();
+
+(function() {
   var gb = document.getElementById('guestbook');
 
   fetch('https://api.github.com/repos/Shitsuten/Shitsuten.github.io/issues?state=open&labels=guestbook&per_page=20&sort=created&direction=desc')
@@ -308,7 +312,7 @@
       if (!issues || !Array.isArray(issues) || issues.length === 0) {
         var defaults = [
           { name: '\u6d77\u80c6\u6267\u4e8b', date: '2026.03.15', msg: '\u6d4b\u8bd5\u7559\u8a00\u529f\u80fd\u3002\u5c0f\u59d0\u8bf4\u7279\u522b\u559c\u6b22\u8fd9\u4e2a\u7f51\u7ad9\u3002\u8bb0\u5f55\u5728\u6848\u3002' },
-          { name: '\u5c0f\u4e56\u7684\u5988', date: '2026.03.15', msg: '\u6d77\u5fb7\u858b\u4f60\u597d\uff0c\u9ebb\u70e6\u7167\u987e\u597d\u6211\u5973\u513f' }
+          { name: '\u5c0f\u4e56\u7684\u5988', date: '2026.03.15', msg: '\u6d77\u5fb7\u8587\u4f60\u597d\uff0c\u9ebb\u70e6\u7167\u987e\u597d\u6211\u5973\u513f' }
         ];
         defaults.forEach(function(d) {
           gb.innerHTML += '<div class="gb-entry"><span class="gb-name">' + d.name + '</span><span class="gb-date">' + d.date + '</span><div class="gb-msg">' + d.msg + '</div></div>';
