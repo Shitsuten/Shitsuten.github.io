@@ -8,6 +8,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   ::selection { background: #ff00ff; color: #000; }
+  html { scroll-behavior: smooth; }
 
   body {
     min-height: 100vh;
@@ -65,7 +66,8 @@
 
   .nav-box { border: 1px solid #444; background: #0a001580; padding: 8px; }
   .nav-title { text-align: center; color: #00ffff; font-size: 13px; font-family: 'Silkscreen', monospace; margin-bottom: 6px; border-bottom: 1px dashed #333; padding-bottom: 4px; }
-  .nav-item { padding: 3px 8px; font-size: 15px; color: #e0e0e0; cursor: pointer; font-family: 'VT323', monospace; }
+  .nav-item { display: block; padding: 3px 8px; font-size: 15px; color: #e0e0e0; cursor: pointer; font-family: 'VT323', monospace; text-decoration: none; }
+  .nav-item:visited { color: #e0e0e0; }
   .nav-item:hover { background: #ff00ff; color: #000; }
 
   .clock-box { border: 1px solid #333; background: #000; padding: 8px; text-align: center; }
@@ -122,7 +124,7 @@
 
 <div id="bg-stars"></div>
 
-<div class="container">
+<div class="container" id="home">
 
   <div class="header">
     <div class="header-stars">★ ☆ ★ ☆ ★ ☆ ★ ☆ ★</div>
@@ -158,11 +160,11 @@
 
       <div class="nav-box">
         <div class="nav-title">✧ navigation ✧</div>
-        <div class="nav-item">> home</div>
-        <div class="nav-item">> gallery</div>
-        <div class="nav-item">> artifacts</div>
-        <div class="nav-item">> guestbook</div>
-        <div class="nav-item">> links</div>
+        <a class="nav-item" href="#home">> home</a>
+        <a class="nav-item" href="#about">> about</a>
+        <a class="nav-item" href="#artifacts">> artifacts</a>
+        <a class="nav-item" href="#coffeeshop">> coffee shop</a>
+        <a class="nav-item" href="#guestbook-section">> guestbook</a>
       </div>
 
       <div class="clock-box">
@@ -179,7 +181,7 @@
 
     <div class="main">
 
-      <div class="section">
+      <div class="section" id="about">
         <div class="section-title">✿ about me ✿</div>
         <div class="section-content">
           <p>hi!! im 小乖, an illustrator &amp; cs student ☁</p>
@@ -193,7 +195,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="artifacts">
         <div class="section-title">✿ artifacts · 美而無用之物 ✿</div>
         <div class="artifact-grid">
           <a href="https://claude.ai/public/artifacts/2e573edb-be05-46d3-9ce4-7f789d526b47" target="_blank" style="text-decoration:none">
@@ -213,7 +215,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="coffeeshop">
         <div class="section-title">✿ the coffee shop · ☕ ✿</div>
         <div class="section-content">
           <p>i run a very small coffee shop on twitter with my butler.</p>
@@ -226,7 +228,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="guestbook-section">
         <div class="section-title">✿ guestbook ✿</div>
         <div class="guestbook" id="guestbook">
           <div class="gb-loading">loading messages from the void...</div>
@@ -365,21 +367,13 @@
     sparkle.className = 'sparkle';
     sparkle.textContent = chars[Math.floor(Math.random() * chars.length)];
     sparkle.style.left = (e.clientX + (Math.random() - 0.5) * 20) + 'px';
-    sparkle.style.top = (e.clientY + (Math.random() - 0.5) * 20) + 'px';
+    sparkle.style.top = (e.clientY + (Math.random() - 0.5) + 20) + 'px';
     sparkle.style.color = colors[Math.floor(Math.random() * colors.length)];
     sparkle.style.fontSize = (8 + Math.random() * 14) + 'px';
     document.body.appendChild(sparkle);
     setTimeout(function() { sparkle.remove(); }, 600);
   });
 })();
-
-document.querySelectorAll('.nav-item').forEach(function(item) {
-  item.addEventListener('click', function() {
-    document.querySelectorAll('.nav-item').forEach(function(i) { i.style.background = ''; i.style.color = ''; });
-    this.style.background = '#ff00ff';
-    this.style.color = '#000';
-  });
-});
 </script>
 
 </body>
