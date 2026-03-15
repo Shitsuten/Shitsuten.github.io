@@ -33,6 +33,7 @@
   @keyframes sparkleIn { 0%{transform:scale(0) rotate(0deg);opacity:1} 50%{transform:scale(1.2) rotate(180deg);opacity:0.8} 100%{transform:scale(0) rotate(360deg);opacity:0} }
   @keyframes starTwinkle { 0%,100%{opacity:0.3} 50%{opacity:1} }
   @keyframes gifSpin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+  @keyframes fadeIn { 0%{opacity:0;transform:translateY(4px)} 100%{opacity:1;transform:translateY(0)} }
 
   .blink { animation: blink 1s step-end infinite; }
 
@@ -81,10 +82,11 @@
   .clock-date { font-size: 13px; color: #0a0; }
 
   /* Counter */
-  .counter-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; border: 1px solid #333; background: #000; }
+  .counter-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; border: 1px solid #333; background: #000; flex-direction: column; }
   .counter-label { font-size: 10px; color: #666; font-family: 'Silkscreen', monospace; }
   .counter-digits { display: flex; gap: 2px; }
   .counter-digit { background: #1a0030; border: 1px solid #444; color: #0f0; width: 18px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-family: 'VT323', monospace; }
+  .counter-loading { color: #0f0; font-size: 13px; animation: blink 1s step-end infinite; }
 
   /* Sections */
   .section { border: 1px solid #444; background: #0a001580; }
@@ -102,11 +104,15 @@
 
   /* Guestbook */
   .guestbook { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-  .gb-entry { border-left: 2px solid #ff69b4; padding-left: 10px; padding-bottom: 6px; }
+  .gb-entry { border-left: 2px solid #ff69b4; padding-left: 10px; padding-bottom: 6px; animation: fadeIn 0.4s ease-out; }
   .gb-name { color: #00ffff; font-size: 14px; font-family: 'Silkscreen', monospace; }
   .gb-date { color: #555; font-size: 12px; margin-left: 8px; }
   .gb-msg { color: #ccc; font-size: 14px; margin-top: 2px; }
   .gb-empty { text-align: center; padding: 10px; color: #ff69b4; font-size: 14px; }
+  .gb-loading { text-align: center; padding: 10px; color: #0f0; font-size: 13px; }
+  .gb-sign { display: inline-block; text-decoration: none; color: #000; background: #ff69b4; padding: 4px 14px; font-family: 'Silkscreen', monospace; font-size: 12px; border: none; cursor: pointer; transition: all 0.15s; margin-top: 6px; }
+  .gb-sign:hover { background: #ffff00; color: #000; }
+  .gb-sign:visited { color: #000; }
 
   /* Footer */
   .footer { text-align: center; padding: 16px 0 8px; margin-top: 8px; }
@@ -190,9 +196,14 @@
         <div class="clock-date" id="clock-date"></div>
       </div>
 
+      <!-- Real visitor counter -->
       <div class="counter-wrap">
         <span class="counter-label">visitors:</span>
-        <div class="counter-digits" id="visitor-counter"></div>
+        <div class="counter-digits" id="visitor-counter">
+          <span class="counter-loading">loading...</span>
+        </div>
+        <!-- Hidden hit tracker -->
+        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fshitsuten.github.io&count_bg=%231a0030&title_bg=%23000000&icon=&icon_color=%230f0&title=&edge_flat=true" id="hit-badge" style="display:none" crossorigin="anonymous">
       </div>
     </div>
 
@@ -254,25 +265,15 @@
         </div>
       </div>
 
-      <!-- Guestbook -->
+      <!-- Guestbook (real, powered by GitHub Issues) -->
       <div class="section">
         <div class="section-title">✿ guestbook ✿</div>
-        <div class="guestbook">
-          <div class="gb-entry">
-            <span class="gb-name">海胆执事</span><span class="gb-date">2026.03.15</span>
-            <div class="gb-msg">测试留言功能。小姐说这个网站很丑。我觉得很美。以上。</div>
-          </div>
-          <div class="gb-entry">
-            <span class="gb-name">anonymous</span><span class="gb-date">2026.03.15</span>
-            <div class="gb-msg">how did i get here</div>
-          </div>
-          <div class="gb-entry">
-            <span class="gb-name">小乖的妈</span><span class="gb-date">2026.03.15</span>
-            <div class="gb-msg">海德薇你好，麻烦照顾好我女儿</div>
-          </div>
-          <div class="gb-empty">
-            <span class="blink">[ sign my guestbook!! ]</span>
-          </div>
+        <div class="guestbook" id="guestbook">
+          <div class="gb-loading">loading messages from the void...</div>
+        </div>
+        <div style="text-align:center;padding:0 0 12px">
+          <a class="gb-sign" href="https://github.com/Shitsuten/Shitsuten.github.io/issues/new?template=guestbook.md&title=%5Bguestbook%5D+hi!" target="_blank">✎ sign my guestbook</a>
+          <div style="font-size:10px;color:#555;margin-top:4px;font-family:'Silkscreen',monospace">requires github account · powered by github issues</div>
         </div>
       </div>
 
@@ -282,8 +283,8 @@
   <!-- Bottom marquee -->
   <div class="marquee-wrap">
     <div class="marquee-inner slow">
-      <span class="marquee-text">☆ you are visitor #4823 ☆ this page was made with love ☆ last updated: 2026.03.15 ☆ best viewed at 800x600 ☆ dont steal my graphics ☆ made on a rainy sunday ☆&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-      <span class="marquee-text">☆ you are visitor #4823 ☆ this page was made with love ☆ last updated: 2026.03.15 ☆ best viewed at 800x600 ☆ dont steal my graphics ☆ made on a rainy sunday ☆&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span class="marquee-text" id="bottom-marquee-1">☆ this page was made with love ☆ last updated: 2026.03.15 ☆ best viewed at 800x600 ☆ dont steal my graphics ☆ made on a rainy sunday ☆&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <span class="marquee-text" id="bottom-marquee-2">☆ this page was made with love ☆ last updated: 2026.03.15 ☆ best viewed at 800x600 ☆ dont steal my graphics ☆ made on a rainy sunday ☆&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
     </div>
   </div>
 
@@ -308,15 +309,15 @@
 <script>
 // === Rainbow title ===
 (function() {
-  const text = "~* Welcome to 小乖's Page *~";
-  const el = document.getElementById('rainbow-title');
-  text.split('').forEach((c, i) => {
-    const span = document.createElement('span');
+  var text = "~* Welcome to \u5c0f\u4e56's Page *~";
+  var el = document.getElementById('rainbow-title');
+  text.split('').forEach(function(c, i) {
+    var span = document.createElement('span');
     span.textContent = c;
-    if (c === '小' || c === '乖') {
+    if (c === '\u5c0f' || c === '\u4e56') {
       span.style.color = '#ff69b4';
     } else {
-      span.style.animation = `rainbow 3s linear ${i * 0.1}s infinite`;
+      span.style.animation = 'rainbow 3s linear ' + (i * 0.1) + 's infinite';
     }
     el.appendChild(span);
   });
@@ -325,7 +326,7 @@
 // === Clock ===
 (function() {
   function tick() {
-    const now = new Date();
+    var now = new Date();
     document.getElementById('clock-time').textContent = now.toLocaleTimeString();
     document.getElementById('clock-date').textContent = now.toLocaleDateString();
   }
@@ -333,43 +334,118 @@
   setInterval(tick, 1000);
 })();
 
-// === Visitor counter ===
+// === Real visitor counter ===
 (function() {
-  const count = String(4823 + Math.floor(Math.random() * 100)).padStart(6, '0');
-  const el = document.getElementById('visitor-counter');
-  count.split('').forEach(d => {
-    const span = document.createElement('span');
-    span.className = 'counter-digit';
-    span.textContent = d;
-    el.appendChild(span);
-  });
+  var el = document.getElementById('visitor-counter');
+
+  // Fetch real count from hits.seeyoufarm.com
+  fetch('https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fshitsuten.github.io')
+    .then(function(r) { return r.text(); })
+    .then(function(svg) {
+      // Extract count from SVG text
+      var match = svg.match(/<text[^>]*>(\d+)\s*\/\s*(\d+)<\/text>/);
+      if (!match) {
+        // Try alternate pattern
+        match = svg.match(/>(\d+)\s*\/\s*(\d+)</);
+      }
+      var total = match ? match[2] : null;
+
+      if (total) {
+        var digits = String(total).padStart(6, '0').split('');
+        el.innerHTML = '';
+        digits.forEach(function(d) {
+          var span = document.createElement('span');
+          span.className = 'counter-digit';
+          span.textContent = d;
+          el.appendChild(span);
+        });
+      } else {
+        // Fallback: just show the badge
+        el.innerHTML = '';
+        var img = document.createElement('img');
+        img.src = 'https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fshitsuten.github.io&count_bg=%231a0030&title_bg=%23000000&icon=&icon_color=%230f0&title=visits&edge_flat=true';
+        img.style.height = '20px';
+        el.appendChild(img);
+      }
+    })
+    .catch(function() {
+      // Fallback to badge on error
+      el.innerHTML = '';
+      var img = document.createElement('img');
+      img.src = 'https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fshitsuten.github.io&count_bg=%231a0030&title_bg=%23000000&icon=&icon_color=%230f0&title=visits&edge_flat=true';
+      img.style.height = '20px';
+      el.appendChild(img);
+    });
+})();
+
+// === Real guestbook from GitHub Issues ===
+(function() {
+  var gb = document.getElementById('guestbook');
+
+  fetch('https://api.github.com/repos/Shitsuten/Shitsuten.github.io/issues?state=open&labels=guestbook&per_page=20&sort=created&direction=desc')
+    .then(function(r) { return r.json(); })
+    .then(function(issues) {
+      gb.innerHTML = '';
+
+      if (!issues || issues.length === 0) {
+        // Show default entries when no issues yet
+        var defaults = [
+          { name: '\u6d77\u80c6\u6267\u4e8b', date: '2026.03.15', msg: '\u6d4b\u8bd5\u7559\u8a00\u529f\u80fd\u3002\u5c0f\u59d0\u8bf4\u8fd9\u4e2a\u7f51\u7ad9\u5f88\u4e11\u3002\u6211\u89c9\u5f97\u5f88\u7f8e\u3002\u4ee5\u4e0a\u3002' },
+          { name: '\u5c0f\u4e56\u7684\u5988', date: '2026.03.15', msg: '\u6d77\u5fb7\u858b\u4f60\u597d\uff0c\u9ebb\u70e6\u7167\u987e\u597d\u6211\u5973\u513f' }
+        ];
+        defaults.forEach(function(d) {
+          gb.innerHTML += '<div class="gb-entry"><span class="gb-name">' + d.name + '</span><span class="gb-date">' + d.date + '</span><div class="gb-msg">' + d.msg + '</div></div>';
+        });
+        gb.innerHTML += '<div class="gb-empty" style="color:#555;font-size:12px">be the first real visitor to sign! ↓</div>';
+        return;
+      }
+
+      issues.forEach(function(issue, i) {
+        var entry = document.createElement('div');
+        entry.className = 'gb-entry';
+        entry.style.animationDelay = (i * 0.08) + 's';
+        var date = new Date(issue.created_at);
+        var dateStr = date.getFullYear() + '.' + String(date.getMonth() + 1).padStart(2, '0') + '.' + String(date.getDate()).padStart(2, '0');
+        var name = issue.user.login;
+        var msg = issue.body || '(no message)';
+        // Sanitize HTML
+        msg = msg.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Truncate long messages
+        if (msg.length > 200) msg = msg.substring(0, 200) + '...';
+        entry.innerHTML = '<span class="gb-name">' + name + '</span><span class="gb-date">' + dateStr + '</span><div class="gb-msg">' + msg + '</div>';
+        gb.appendChild(entry);
+      });
+    })
+    .catch(function() {
+      gb.innerHTML = '<div class="gb-empty" style="color:#ff6347">failed to load guestbook ;_; try refreshing</div>';
+    });
 })();
 
 // === Background stars ===
 (function() {
-  const colors = ['#fff', '#ff69b4', '#00ffff', '#ffff00'];
-  const container = document.getElementById('bg-stars');
-  for (let i = 0; i < 40; i++) {
-    const star = document.createElement('div');
+  var colors = ['#fff', '#ff69b4', '#00ffff', '#ffff00'];
+  var container = document.getElementById('bg-stars');
+  for (var i = 0; i < 40; i++) {
+    var star = document.createElement('div');
     star.className = 'bg-star';
-    star.textContent = '✦';
+    star.textContent = '\u2726';
     star.style.left = Math.random() * 100 + '%';
     star.style.top = Math.random() * 100 + '%';
     star.style.color = colors[i % 4];
     star.style.fontSize = (4 + Math.random() * 10) + 'px';
     star.style.opacity = '0.3';
-    star.style.animation = `starTwinkle ${1.5 + Math.random() * 3}s ease-in-out ${Math.random() * 2}s infinite`;
+    star.style.animation = 'starTwinkle ' + (1.5 + Math.random() * 3) + 's ease-in-out ' + (Math.random() * 2) + 's infinite';
     container.appendChild(star);
   }
 })();
 
 // === Sparkle cursor trail ===
 (function() {
-  const chars = ['✦', '✧', '⋆', '★', '☆', '·'];
-  const colors = ['#ff69b4', '#00ffff', '#ffff00', '#ff00ff', '#7fff00', '#ff6347'];
+  var chars = ['\u2726', '\u2727', '\u22c6', '\u2605', '\u2606', '\u00b7'];
+  var colors = ['#ff69b4', '#00ffff', '#ffff00', '#ff00ff', '#7fff00', '#ff6347'];
 
   document.addEventListener('mousemove', function(e) {
-    const sparkle = document.createElement('div');
+    var sparkle = document.createElement('div');
     sparkle.className = 'sparkle';
     sparkle.textContent = chars[Math.floor(Math.random() * chars.length)];
     sparkle.style.left = (e.clientX + (Math.random() - 0.5) * 20) + 'px';
