@@ -39,7 +39,7 @@
 
   .container { max-width: 900px; margin: 0 auto; padding: 16px 12px; position: relative; z-index: 1; }
   .columns { display: flex; gap: 12px; margin-top: 12px; align-items: flex-start; flex-wrap: wrap; }
-  .sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+  .sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 12px; align-self: flex-start; }
   .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 
   .header { text-align: center; padding: 16px 0; }
@@ -115,7 +115,7 @@
 
   @media (max-width: 600px) {
     .columns { flex-direction: column; }
-    .sidebar { width: 100%; }
+    .sidebar { width: 100%; position: static; }
     .title { font-size: 13px; }
   }
 </style>
@@ -367,7 +367,7 @@
     sparkle.className = 'sparkle';
     sparkle.textContent = chars[Math.floor(Math.random() * chars.length)];
     sparkle.style.left = (e.clientX + (Math.random() - 0.5) * 20) + 'px';
-    sparkle.style.top = (e.clientY + (Math.random() - 0.5) + 20) + 'px';
+    sparkle.style.top = (e.clientY + (Math.random() - 0.5) * 20) + 'px';
     sparkle.style.color = colors[Math.floor(Math.random() * colors.length)];
     sparkle.style.fontSize = (8 + Math.random() * 14) + 'px';
     document.body.appendChild(sparkle);
