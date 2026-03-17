@@ -115,22 +115,24 @@
 
   .exit-link {
     position: fixed;
-    bottom: 8px;
-    left: 8px;
-    font-size: 9px;
-    font-family: 'Silkscreen', monospace;
-    color: rgba(255,255,255,0.06);
+    top: 12px;
+    right: 16px;
+    font-size: 11px;
+    font-family: 'VT323', monospace;
+    color: #0f0;
     text-decoration: none;
     letter-spacing: 3px;
     z-index: 100;
-    transition: color 1.5s ease;
+    text-shadow: 0 0 6px #0f0a, 0 0 12px #0f04;
+    transition: all 0.3s ease;
     cursor: crosshair;
   }
-  .exit-link:hover {
-    color: rgba(255,0,0,0.3);
-  }
   .exit-link:visited {
-    color: rgba(255,255,255,0.06);
+    color: #0f0;
+  }
+  .exit-link:hover {
+    color: #ff0000;
+    text-shadow: 0 0 8px #f00a, 0 0 16px #f004;
   }
 
   @media (max-width: 600px) {
@@ -286,7 +288,7 @@
 
 </div>
 
-<a class="exit-link" href="backroom.html">EXIT</a>
+<a class="exit-link" href="backroom.html">[ EXIT ]</a>
 
 <script>
 (function() {
