@@ -6,310 +6,479 @@
 <title></title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
-    min-height: 100vh;
-    background: #8B7D3C;
-    color: #5a5030;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
+    background: #0a100e;
     overflow: hidden;
     cursor: none;
+    width: 100vw;
+    height: 100vh;
   }
-
-  .light-overlay {
+  canvas { display: block; }
+  .heart-cursor {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background:
-      radial-gradient(ellipse at 25% 20%, rgba(255,248,180,0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 75% 40%, rgba(255,248,180,0.12) 0%, transparent 45%),
-      radial-gradient(ellipse at 50% 80%, rgba(255,248,180,0.08) 0%, transparent 40%);
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  @keyframes flicker {
-    0%, 100% { opacity: 1; }
-    3% { opacity: 0.85; }
-    4% { opacity: 1; }
-    7% { opacity: 0.9; }
-    8% { opacity: 1; }
-    47% { opacity: 1; }
-    48% { opacity: 0.7; }
-    49% { opacity: 0.85; }
-    50% { opacity: 1; }
-    87% { opacity: 1; }
-    88% { opacity: 0.8; }
-    89% { opacity: 0.95; }
-    90% { opacity: 1; }
-  }
-
-  .flicker-layer {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255, 252, 220, 0.06);
-    pointer-events: none;
-    z-index: 3;
-    animation: flicker 4s linear infinite;
-  }
-
-  .carpet {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 0;
-    background-color: #8B7D3C;
-    background-image:
-      url("data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='3' height='3' x='0' y='0' fill='%237a6e35' fill-opacity='0.3'/%3E%3Crect width='3' height='3' x='3' y='3' fill='%239a8d48' fill-opacity='0.2'/%3E%3C/svg%3E");
-  }
-
-  .stain {
-    position: fixed;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(60,50,20,0.25) 0%, transparent 70%);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  .wall-upper {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 18%;
-    background: #7a7050;
-    background-image:
-      repeating-linear-gradient(90deg, transparent, transparent 120px, rgba(0,0,0,0.03) 120px, rgba(0,0,0,0.03) 121px);
-    z-index: 1;
-    border-bottom: 2px solid #6a6040;
-  }
-
-  .ceiling-line {
-    position: fixed;
-    top: 18%;
-    left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent 5%, rgba(120,110,60,0.4) 20%, rgba(120,110,60,0.6) 50%, rgba(120,110,60,0.4) 80%, transparent 95%);
-    z-index: 1;
-  }
-
-  .light-fixture {
-    position: fixed;
-    z-index: 2;
-    width: 120px;
-    height: 8px;
-    background: linear-gradient(180deg, #fffff0 0%, #fffde0 40%, rgba(255,253,220,0.4) 100%);
-    box-shadow: 0 0 30px 10px rgba(255,252,200,0.15), 0 0 60px 20px rgba(255,252,200,0.06);
-    border-radius: 1px;
-  }
-
-  .doorframe {
-    position: fixed;
-    z-index: 1;
-    border: 2px solid #6a6040;
-    background: rgba(60,50,20,0.15);
-  }
-
-  .center-text {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    text-align: center;
-    opacity: 0;
-    animation: textAppear 6s ease-in forwards;
-  }
-
-  @keyframes textAppear {
-    0%, 70% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-
-  .msg {
-    font-size: 13px;
-    color: rgba(90,80,48,0.7);
-    letter-spacing: 3px;
-    line-height: 2.2;
-  }
-
-  .msg-small {
-    font-size: 10px;
-    color: rgba(90,80,48,0.4);
-    letter-spacing: 5px;
-    margin-top: 20px;
-  }
-
-  .return {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 10;
-    font-size: 9px;
-    color: rgba(90,80,48,0.2);
-    text-decoration: none;
-    letter-spacing: 2px;
-    cursor: none;
-    transition: color 2s ease;
-  }
-  .return:hover {
-    color: rgba(90,80,48,0.5);
-  }
-
-  .grain {
-    position: fixed;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    z-index: 4;
-    pointer-events: none;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    animation: grainShift 0.5s steps(3) infinite;
-  }
-  @keyframes grainShift {
-    0% { transform: translate(0,0); }
-    33% { transform: translate(-2px,1px); }
-    66% { transform: translate(1px,-1px); }
-    100% { transform: translate(0,0); }
-  }
-
-  .custom-cursor {
-    position: fixed;
-    width: 4px;
-    height: 4px;
-    background: rgba(90,80,48,0.3);
-    border-radius: 50%;
     pointer-events: none;
     z-index: 9999;
     transform: translate(-50%, -50%);
-    transition: opacity 0.3s;
+    font-size: 16px;
+    color: #ff2244;
+    filter: drop-shadow(0 0 4px rgba(255,34,68,0.6));
+    animation: heartBeat 0.8s ease-in-out infinite;
+    user-select: none;
   }
-
-  .vignette {
+  @keyframes heartBeat {
+    0%, 100% { transform: translate(-50%,-50%) scale(1); }
+    15% { transform: translate(-50%,-50%) scale(1.25); }
+    30% { transform: translate(-50%,-50%) scale(1); }
+    45% { transform: translate(-50%,-50%) scale(1.15); }
+    60% { transform: translate(-50%,-50%) scale(1); }
+  }
+  .msg-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 4;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    text-align: center;
+    opacity: 0;
+    animation: msgFade 7s ease-in forwards;
     pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(40,35,15,0.5) 100%);
+    font-family: 'Courier New', monospace;
+  }
+  @keyframes msgFade {
+    0%, 55% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  .msg-line1 {
+    font-size: 15px;
+    color: #fff;
+    letter-spacing: 5px;
+    text-shadow: 0 0 8px rgba(255,255,255,0.6), 0 0 20px rgba(255,255,255,0.3), 0 0 40px rgba(200,255,220,0.15);
+  }
+  .msg-line2 {
+    font-size: 11px;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 6px;
+    margin-top: 16px;
+    text-shadow: 0 0 6px rgba(255,255,255,0.5), 0 0 16px rgba(255,255,255,0.2), 0 0 30px rgba(200,255,220,0.1);
   }
 </style>
 </head>
 <body>
 
-<div class="carpet"></div>
-<div class="wall-upper"></div>
-<div class="ceiling-line"></div>
-
-<div class="light-fixture" style="top:4%;left:20%"></div>
-<div class="light-fixture" style="top:4%;left:55%"></div>
-<div class="light-fixture" style="top:4%;right:15%;width:80px"></div>
-
-<div class="stain" style="top:60%;left:15%;width:180px;height:120px"></div>
-<div class="stain" style="top:75%;left:65%;width:140px;height:90px"></div>
-<div class="stain" style="top:40%;left:80%;width:100px;height:160px"></div>
-<div class="stain" style="top:55%;left:40%;width:220px;height:80px"></div>
-
-<div class="doorframe" style="top:20%;left:8%;width:50px;height:55%;opacity:0.3"></div>
-<div class="doorframe" style="top:22%;right:12%;width:40px;height:48%;opacity:0.2"></div>
-
-<div class="light-overlay"></div>
-<div class="flicker-layer"></div>
-<div class="grain"></div>
-<div class="vignette"></div>
-
-<div class="center-text">
-  <div class="msg">
-    you're not supposed to be here.
-  </div>
-  <div class="msg-small">
-    but you already knew that.
-  </div>
+<canvas id="c"></canvas>
+<div class="heart-cursor" id="cursor">&#x2665;</div>
+<div class="msg-overlay" id="msgBox">
+  <div class="msg-line1">No one is here.</div>
+  <div class="msg-line2">But you are not alone.</div>
 </div>
 
-<a class="return" href="home.html" id="return-link">← go back</a>
-
-<div class="custom-cursor" id="cursor"></div>
-
 <script>
-document.addEventListener('mousemove', function(e) {
-  var cursor = document.getElementById('cursor');
-  cursor.style.left = e.clientX + 'px';
-  cursor.style.top = e.clientY + 'px';
-});
-
 (function() {
-  var started = false;
-  function startAmbience() {
-    if (started) return;
-    started = true;
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc1 = ctx.createOscillator();
-    var gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.value = 60;
-    gain1.gain.value = 0.03;
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start();
-    var osc2 = ctx.createOscillator();
-    var gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.value = 120;
-    gain2.gain.value = 0.015;
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start();
-    var bufSize = ctx.sampleRate * 2;
-    var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    var data = buf.getChannelData(0);
-    for (var i = 0; i < bufSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.008;
-    }
-    var noise = ctx.createBufferSource();
-    noise.buffer = buf;
-    noise.loop = true;
-    var noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = 'lowpass';
-    noiseFilter.frequency.value = 400;
-    var noiseGain = ctx.createGain();
-    noiseGain.gain.value = 0.5;
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
-    noise.start();
-    setInterval(function() {
-      if (Math.random() > 0.85) {
-        var spike = ctx.createOscillator();
-        var sGain = ctx.createGain();
-        spike.type = 'sawtooth';
-        spike.frequency.value = 120;
-        sGain.gain.value = 0.02;
-        sGain.gain.setTargetAtTime(0, ctx.currentTime + 0.05, 0.02);
-        spike.connect(sGain);
-        sGain.connect(ctx.destination);
-        spike.start();
-        spike.stop(ctx.currentTime + 0.15);
-      }
-    }, 2000);
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var W, H, cx, cy, vx, vy;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    cx = W / 2;
+    cy = H / 2;
   }
-  document.addEventListener('click', startAmbience, { once: true });
-  document.addEventListener('mousemove', startAmbience, { once: true });
-})();
+  resize();
+  window.addEventListener('resize', resize);
 
-(function() {
-  var flicker = document.querySelector('.flicker-layer');
-  setInterval(function() {
-    var opacity = 0.04 + Math.random() * 0.06;
-    flicker.style.background = 'rgba(255, 252, 220, ' + opacity + ')';
-  }, 3000);
-})();
+  function getVP() { vx = cx; vy = cy * 0.94; }
 
-(function() {
-  var link = document.getElementById('return-link');
-  setInterval(function() {
-    var x = (Math.random() - 0.5) * 2;
-    var y = (Math.random() - 0.5) * 1;
-    link.style.transform = 'translate(' + x + 'px,' + y + 'px)';
-  }, 4000);
+  // cursor
+  document.addEventListener('mousemove', function(e) {
+    var cur = document.getElementById('cursor');
+    cur.style.left = e.clientX + 'px';
+    cur.style.top = e.clientY + 'px';
+  });
+
+  // text glitch/shake
+  (function() {
+    var box = document.getElementById('msgBox');
+    setInterval(function() {
+      if (Math.random() < 0.35) {
+        var dx = (Math.random() - 0.5) * 6;
+        var dy = (Math.random() - 0.5) * 4;
+        var skew = (Math.random() - 0.5) * 1.5;
+        box.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) skewX(' + skew + 'deg)';
+        if (Math.random() < 0.3) box.style.opacity = '0.6';
+        setTimeout(function() {
+          box.style.transform = 'translate(-50%, -50%)';
+          box.style.opacity = '';
+        }, 70 + Math.random() * 50);
+      }
+    }, 2200);
+  })();
+
+  // ---- NON-LINEAR PERSPECTIVE ----
+  function p(d) {
+    return Math.pow(Math.max(0, Math.min(1, d)), 0.45);
+  }
+
+  function leftWallX(d)  { return vx * p(d); }
+  function rightWallX(d) { return vx + (W - vx) * (1 - p(d)); }
+  function floorY(d)     { return vy + (H - vy) * (1 - p(d)); }
+  function ceilingY(d)   { return vy - (vy) * (1 - p(d)); }
+
+  var speed = 0.002;
+
+  // doors
+  var doors = [];
+  var homeDoorObj = null;
+  var doorZThickness = 0.05;
+
+  function makeDoor(d) {
+    return { d: d, side: Math.random() < 0.5 ? -1 : 1, isHome: false, shade: Math.random() * 10 - 5, clickRect: null };
+  }
+
+  function initDoors() {
+    doors = [];
+    for (var i = 0; i < 14; i++) doors.push(makeDoor(0.12 + i * 0.065));
+    var hi = Math.floor(Math.random() * 5) + 5;
+    doors[hi].isHome = true;
+    homeDoorObj = doors[hi];
+  }
+
+  var lights = [];
+  function initLights() {
+    lights = [];
+    for (var i = 0; i < 10; i++) lights.push({ d: 0.08 + i * 0.09, flicker: Math.random() * Math.PI * 2 });
+  }
+
+  initDoors();
+  initLights();
+
+  // ---- DRAW CORRIDOR SHELL ----
+  function drawCorridor() {
+    getVP();
+
+    ctx.beginPath();
+    ctx.moveTo(0, H); ctx.lineTo(vx, vy); ctx.lineTo(W, H); ctx.closePath();
+    var fg = ctx.createLinearGradient(cx, vy, cx, H);
+    fg.addColorStop(0, '#0c1610');
+    fg.addColorStop(0.5, '#16221b');
+    fg.addColorStop(1, '#1e2e25');
+    ctx.fillStyle = fg; ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(vx, vy); ctx.lineTo(W, 0); ctx.closePath();
+    var cg = ctx.createLinearGradient(cx, 0, cx, vy);
+    cg.addColorStop(0, '#121d17');
+    cg.addColorStop(1, '#0a120e');
+    ctx.fillStyle = cg; ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(vx, vy); ctx.lineTo(0, H); ctx.closePath();
+    var lg = ctx.createLinearGradient(0, cy, vx, vy);
+    lg.addColorStop(0, '#1f3328');
+    lg.addColorStop(1, '#0c1610');
+    ctx.fillStyle = lg; ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(W, 0); ctx.lineTo(vx, vy); ctx.lineTo(W, H); ctx.closePath();
+    var rg = ctx.createLinearGradient(W, cy, vx, vy);
+    rg.addColorStop(0, '#1f3328');
+    rg.addColorStop(1, '#0c1610');
+    ctx.fillStyle = rg; ctx.fill();
+
+    ctx.strokeStyle = 'rgba(50,80,60,0.09)';
+    ctx.lineWidth = 1;
+    for (var i = 1; i < 30; i++) {
+      var d = i / 30;
+      var y = floorY(d);
+      var lx = leftWallX(d);
+      var rx = rightWallX(d);
+      ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(rx, y); ctx.stroke();
+    }
+
+    ctx.strokeStyle = 'rgba(60,100,75,0.1)';
+    ctx.beginPath(); ctx.moveTo(0, cy * 1.05); ctx.lineTo(vx, vy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W, cy * 1.05); ctx.lineTo(vx, vy); ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(40,65,50,0.12)';
+    ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(vx, vy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W, H); ctx.lineTo(vx, vy); ctx.stroke();
+  }
+
+  // ---- DRAW A PERSPECTIVE DOOR ----
+  function drawDoor(door, time) {
+    getVP();
+    var d = door.d;
+    if (d < 0.04 || d > 0.97) return;
+
+    var side = door.side;
+    var d_near = Math.max(0.02, d - doorZThickness / 2);
+    var d_far  = Math.min(0.99, d + doorZThickness / 2);
+
+    var wx_near, wx_far;
+    if (side === -1) {
+      wx_near = leftWallX(d_near);
+      wx_far  = leftWallX(d_far);
+    } else {
+      wx_near = rightWallX(d_near);
+      wx_far  = rightWallX(d_far);
+    }
+
+    var fy_near = floorY(d_near);
+    var fy_far  = floorY(d_far);
+    var cy_near = ceilingY(d_near);
+    var cy_far  = ceilingY(d_far);
+
+    var doorHFrac = 0.63;
+    var dh_near = (fy_near - cy_near) * doorHFrac;
+    var dh_far  = (fy_far  - cy_far)  * doorHFrac;
+
+    var bl = { x: wx_near, y: fy_near };
+    var tl = { x: wx_near, y: fy_near - dh_near };
+    var br = { x: wx_far,  y: fy_far };
+    var tr = { x: wx_far,  y: fy_far - dh_far };
+
+    var screenW = Math.abs(bl.x - br.x);
+    var screenH = Math.max(dh_near, dh_far);
+    if (screenW < 3 || screenH < 5) return;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(bl.x - side * 1.5, bl.y + 1);
+    ctx.lineTo(tl.x - side * 1.5, tl.y - 1);
+    ctx.lineTo(tr.x - side * 1.5, tr.y - 1);
+    ctx.lineTo(br.x - side * 1.5, br.y + 1);
+    ctx.closePath(); ctx.fill();
+
+    var b = Math.max(18, Math.floor(28 + door.shade));
+    ctx.fillStyle = 'rgb(' + Math.floor(b * 0.65) + ',' + (b + 6) + ',' + Math.floor(b * 0.75) + ')';
+    ctx.beginPath();
+    ctx.moveTo(bl.x, bl.y);
+    ctx.lineTo(tl.x, tl.y);
+    ctx.lineTo(tr.x, tr.y);
+    ctx.lineTo(br.x, br.y);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(70,110,85,0.4)';
+    ctx.lineWidth = Math.max(0.5, 1.5 * (1 - d));
+    ctx.beginPath();
+    ctx.moveTo(bl.x, bl.y);
+    ctx.lineTo(tl.x, tl.y);
+    ctx.lineTo(tr.x, tr.y);
+    ctx.lineTo(br.x, br.y);
+    ctx.closePath(); ctx.stroke();
+
+    if (screenW > 8 && screenH > 18) {
+      ctx.strokeStyle = 'rgba(80,120,95,0.18)';
+      ctx.lineWidth = Math.max(0.3, 0.8 * (1 - d));
+      for (var pi = 0; pi < 2; pi++) {
+        var t0 = pi === 0 ? 0.08 : 0.54;
+        var t1 = pi === 0 ? 0.46 : 0.9;
+        var p_tl_x = tl.x + (bl.x - tl.x) * t0;
+        var p_tl_y = tl.y + (bl.y - tl.y) * t0;
+        var p_bl_x = tl.x + (bl.x - tl.x) * t1;
+        var p_bl_y = tl.y + (bl.y - tl.y) * t1;
+        var p_tr_x = tr.x + (br.x - tr.x) * t0;
+        var p_tr_y = tr.y + (br.y - tr.y) * t0;
+        var p_br_x = tr.x + (br.x - tr.x) * t1;
+        var p_br_y = tr.y + (br.y - tr.y) * t1;
+        var inX = (side === -1 ? 1 : -1) * Math.max(1, 2.5 * (1 - d));
+        var inY = Math.max(1, 2 * (1 - d));
+        ctx.beginPath();
+        ctx.moveTo(p_tl_x + inX, p_tl_y + inY);
+        ctx.lineTo(p_tr_x + inX, p_tr_y + inY);
+        ctx.lineTo(p_br_x + inX, p_br_y - inY);
+        ctx.lineTo(p_bl_x + inX, p_bl_y - inY);
+        ctx.closePath(); ctx.stroke();
+      }
+    }
+
+    if (screenW > 5) {
+      var kEdge = side === -1 ? 0.8 : 0.2;
+      var kVert = 0.52;
+      var left_x  = tl.x + (bl.x - tl.x) * kVert;
+      var left_y  = tl.y + (bl.y - tl.y) * kVert;
+      var right_x = tr.x + (br.x - tr.x) * kVert;
+      var right_y = tr.y + (br.y - tr.y) * kVert;
+      var kx = left_x + (right_x - left_x) * kEdge;
+      var ky = left_y + (right_y - left_y) * kEdge;
+      var kr = Math.max(0.8, 2.5 * (1 - d));
+      ctx.beginPath(); ctx.arc(kx, ky, kr, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(100,145,115,0.5)'; ctx.fill();
+    }
+
+    if (door.isHome && screenW > 10) {
+      var labelVert = 0.28;
+      var l_x = tl.x + (bl.x - tl.x) * labelVert;
+      var l_y = tl.y + (bl.y - tl.y) * labelVert;
+      var r_x = tr.x + (br.x - tr.x) * labelVert;
+      var r_y = tr.y + (br.y - tr.y) * labelVert;
+      var labelX = (l_x + r_x) / 2;
+      var labelY = (l_y + r_y) / 2;
+
+      var fs = Math.max(5, Math.floor(14 * (1 - d)));
+      ctx.font = 'bold ' + fs + 'px Courier New';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      var pulse = 0.5 + Math.sin(time * 2.5) * 0.15;
+      ctx.shadowColor = 'rgba(255,80,100,0.5)';
+      ctx.shadowBlur = 8 * (1 - d);
+      ctx.fillStyle = 'rgba(255,110,130,' + pulse.toFixed(2) + ')';
+      ctx.fillText('HOME', labelX, labelY);
+
+      if (fs > 7) {
+        ctx.font = Math.floor(fs * 0.5) + 'px Courier New';
+        ctx.fillStyle = 'rgba(255,110,130,' + (pulse * 0.4).toFixed(2) + ')';
+        ctx.fillText('> > >', labelX, labelY + fs);
+      }
+      ctx.shadowBlur = 0;
+
+      var minX = Math.min(bl.x, tl.x, tr.x, br.x);
+      var maxX = Math.max(bl.x, tl.x, tr.x, br.x);
+      var minY = Math.min(tl.y, tr.y);
+      var maxY = Math.max(bl.y, br.y);
+      door.clickRect = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+    } else {
+      door.clickRect = null;
+    }
+  }
+
+  // ---- CEILING LIGHTS ----
+  function drawLight(light, time) {
+    getVP();
+    var d = light.d;
+    if (d < 0.03 || d > 0.97) return;
+
+    var lx = vx;
+    var cy2 = ceilingY(d);
+    var fy2 = floorY(d);
+    var ps = 1 - p(d);
+    var lw = Math.max(1, 55 * ps);
+    var lh = Math.max(0.5, 3 * ps);
+
+    var f = 0.35 + 0.65 * Math.sin(time * 3.2 + light.flicker) * Math.sin(time * 7.7 + light.flicker * 1.5);
+    f = Math.max(0.06, f);
+
+    ctx.fillStyle = 'rgba(220,255,235,' + (0.5 * f).toFixed(2) + ')';
+    ctx.fillRect(lx - lw / 2, cy2, lw, lh);
+
+    ctx.shadowColor = 'rgba(200,255,220,' + (0.2 * f).toFixed(2) + ')';
+    ctx.shadowBlur = 10 * ps;
+    ctx.fillRect(lx - lw / 2, cy2, lw, lh);
+    ctx.shadowBlur = 0;
+
+    var coneR = lw * 2.2;
+    var midY = (cy2 + fy2) * 0.5;
+    var coneG = ctx.createRadialGradient(lx, midY, 0, lx, midY, coneR);
+    coneG.addColorStop(0, 'rgba(200,255,220,' + (0.022 * f).toFixed(3) + ')');
+    coneG.addColorStop(1, 'rgba(200,255,220,0)');
+    ctx.fillStyle = coneG;
+    ctx.fillRect(lx - coneR, cy2, coneR * 2, fy2 - cy2);
+  }
+
+  // ---- INTERACTION ----
+  canvas.addEventListener('click', function(e) {
+    if (!homeDoorObj || !homeDoorObj.clickRect) return;
+    var r = homeDoorObj.clickRect;
+    if (e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h) {
+      document.body.style.transition = 'opacity 0.8s ease';
+      document.body.style.opacity = '0';
+      setTimeout(function() { window.location.href = 'home.html'; }, 800);
+    }
+  });
+
+  canvas.addEventListener('mousemove', function(e) {
+    var cur = document.getElementById('cursor');
+    if (homeDoorObj && homeDoorObj.clickRect) {
+      var r = homeDoorObj.clickRect;
+      if (e.clientX >= r.x && e.clientX <= r.x + r.w && e.clientY >= r.y && e.clientY <= r.y + r.h) {
+        cur.style.fontSize = '24px';
+        cur.style.color = '#ff6688';
+        cur.style.filter = 'drop-shadow(0 0 8px rgba(255,102,136,0.8))';
+        return;
+      }
+    }
+    cur.style.fontSize = '16px';
+    cur.style.color = '#ff2244';
+    cur.style.filter = 'drop-shadow(0 0 4px rgba(255,34,68,0.6))';
+  });
+
+  // ---- AUDIO ----
+  var audioOn = false;
+  function startAudio() {
+    if (audioOn) return;
+    audioOn = true;
+    try {
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = 50; g.gain.value = 0.02;
+      o.connect(g); g.connect(ac.destination); o.start();
+      var bl = ac.sampleRate * 2;
+      var bf = ac.createBuffer(1, bl, ac.sampleRate);
+      var dd = bf.getChannelData(0);
+      for (var i = 0; i < bl; i++) dd[i] = (Math.random() * 2 - 1) * 0.004;
+      var ns = ac.createBufferSource(); ns.buffer = bf; ns.loop = true;
+      var flt = ac.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 250;
+      var ng = ac.createGain(); ng.gain.value = 0.3;
+      ns.connect(flt); flt.connect(ng); ng.connect(ac.destination); ns.start();
+    } catch(e) {}
+  }
+  document.addEventListener('click', startAudio, { once: true });
+  document.addEventListener('mousemove', startAudio, { once: true });
+
+  // ---- MAIN LOOP ----
+  function frame(t) {
+    t *= 0.001;
+    ctx.fillStyle = '#0a100e';
+    ctx.fillRect(0, 0, W, H);
+
+    drawCorridor();
+
+    for (var i = 0; i < lights.length; i++) {
+      lights[i].d -= speed;
+      if (lights[i].d < 0.01) {
+        lights[i].d += 0.9;
+        lights[i].flicker = Math.random() * Math.PI * 2;
+      }
+      drawLight(lights[i], t);
+    }
+
+    doors.sort(function(a, b) { return b.d - a.d; });
+
+    for (var i = 0; i < doors.length; i++) {
+      doors[i].d -= speed;
+      if (doors[i].d < 0.04) {
+        var wasHome = doors[i].isHome;
+        doors[i].d += 0.86;
+        doors[i].side = Math.random() < 0.5 ? -1 : 1;
+        doors[i].shade = Math.random() * 10 - 5;
+        doors[i].clickRect = null;
+        if (wasHome) {
+          doors[i].isHome = false;
+          var cands = [];
+          for (var j = 0; j < doors.length; j++) {
+            if (!doors[j].isHome && doors[j].d > 0.2 && doors[j].d < 0.7) cands.push(j);
+          }
+          var pick = cands.length > 0 ? cands[Math.floor(Math.random() * cands.length)] : i;
+          doors[pick].isHome = true;
+          homeDoorObj = doors[pick];
+        }
+      }
+      drawDoor(doors[i], t);
+    }
+
+    var vg = ctx.createRadialGradient(cx, cy, Math.min(W, H) * 0.18, cx, cy, Math.max(W, H) * 0.62);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(180,255,200,0.004)';
+    for (var g = 0; g < 20; g++) ctx.fillRect(Math.random() * W | 0, Math.random() * H | 0, 1, 1);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 })();
 </script>
-
 </body>
 </html>
