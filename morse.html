@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morse Code Machine</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08080e; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+const MORSE_TREE = {
+  '': { children: { '.': 'E', '-': 'T' } },
+  'E': { code: '.', children: { '.': 'I', '-': 'A' } },
+  'T': { code: '-', children: { '.': 'N', '-': 'M' } },
+  'I': { code: '..', children: { '.': 'S', '-': 'U' } },
+  'A': { code: '.-', children: { '.': 'R', '-': 'W' } },
+  'N': { code: '-.', children: { '.': 'D', '-': 'K' } },
+  'M': { code: '--', children: { '.': 'G', '-': 'O' } },
+  'S': { code: '...', children: { '.': 'H', '-': 'V' } },
+  'U': { code: '..-', children: { '.': 'F', '-': '' } },
+  'R': { code: '.-.', children: { '.': 'L', '-': '' } },
+  'W': { code: '.--', children: { '.': 'P', '-': 'J' } },
+  'D': { code: '-..', children: { '.': 'B', '-': 'X' } },
+  'K': { code: '-.-', children: { '.': 'C', '-': 'Y' } },
+  'G': { code: '--.', children: { '.': 'Z', '-': 'Q' } },
+  'O': { code: '---', children: {} },
+  'H': { code: '....', children: {} },
+  'V': { code: '...-', children: {} },
+  'F': { code: '..-.', children: {} },
+  'L': { code: '.-..', children: {} },
+  'P': { code: '.--.', children: {} },
+  'J': { code: '.---', children: {} },
+  'B': { code: '-...', children: {} },
+  'X': { code: '-..-', children: {} },
+  'C': { code: '-.-.', children: {} },
+  'Y': { code: '-.--', children: {} },
+  'Z': { code: '--..', children: {} },
+  'Q': { code: '--.-', children: {} },
+};
+
+const MORSE_MAP = {};
+Object.entries(MORSE_TREE).forEach(([letter, info]) => {
+  if (info.code) MORSE_MAP[info.code] = letter;
+});
+
+const COL = 72;
+const ROW = 92;
+const PAD_X = 60;
+const PAD_Y = 52;
+
+function gx(c) { return PAD_X + c * COL; }
+function gy(r) { return PAD_Y + r * ROW; }
+
+const PLACEMENTS = [
+  ['', 7, 0, null],
+  ['E', 9, 1, '.'],   ['T', 5, 1, '-'],
+  ['I', 11, 1, '.'],   ['A', 8, 3, '-'],
+  ['N', 6, 3, '.'],    ['M', 3, 1, '-'],
+  ['S', 12, 2, '.'],   ['U', 10, 2, '-'],
+  ['R', 9, 3, '.'],    ['W', 7, 4, '-'],
+  ['D', 6, 4, '.'],    ['K', 4, 3, '-'],
+  ['G', 3, 2, '.'],    ['O', 1, 1, '-'],
+  ['H', 13, 2, '.'],   ['V', 11, 3, '-'],
+  ['F', 10, 3, '.'],   ['L', 10, 4, '-'],
+  ['P', 8, 4, '.'],    ['J', 7, 5, '-'],
+  ['B', 5, 5, '.'],    ['X', 5, 4, '-'],
+  ['C', 4, 4, '.'],    ['Y', 3, 4, '-'],
+  ['Z', 3, 3, '.'],    ['Q', 1, 3, '-'],
+];
+
+function buildLayout() {
+  const nodePos = {};
+  PLACEMENTS.forEach(([letter, col, row, sym]) => {
+    nodePos[letter] = { x: gx(col), y: gy(row), letter, symbol: sym };
+  });
+  return nodePos;
+}
+
+function buildEdges(nodePos) {
+  const edges = [];
+  Object.entries(MORSE_TREE).forEach(([letter, info]) => {
+    if (!info.children) return;
+    Object.entries(info.children).forEach(([symbol, child]) => {
+      if (child && nodePos[letter] && nodePos[child]) {
+        edges.push({ from: letter, to: child, symbol, code: (info.code || '') + symbol });
+      }
+    });
+  });
+  return edges;
+}
+
+function orthoPath(x1, y1, x2, y2) {
+  const goVert = Math.abs(y2 - y1) > Math.abs(x2 - x1);
+  if (goVert) return `M${x1},${y1} L${x1},${y2} L${x2},${y2}`;
+  return `M${x1},${y1} L${x2},${y1} L${x2},${y2}`;
+}
+
+function orthoLen(x1, y1, x2, y2) {
+  return Math.abs(x2 - x1) + Math.abs(y2 - y1);
+}
+
+function labelOffset(letter, nodePos, edges) {
+  const node = nodePos[letter];
+  if (!node) return { dx: 0, dy: -18 };
+  let dx = 0, dy = -18;
+  const connected = edges.filter(e => e.from === letter || e.to === letter);
+  let hasAbove = false, hasBelow = false, hasLeft = false, hasRight = false;
+  connected.forEach(e => {
+    const other = e.from === letter ? nodePos[e.to] : nodePos[e.from];
+    if (!other) return;
+    if (other.y < node.y - 10) hasAbove = true;
+    if (other.y > node.y + 10) hasBelow = true;
+    if (other.x < node.x - 10) hasLeft = true;
+    if (other.x > node.x + 10) hasRight = true;
+  });
+  if (!hasAbove) { dx = 0; dy = -18; }
+  else if (!hasBelow) { dx = 0; dy = 22; }
+  else if (!hasRight) { dx = 22; dy = 0; }
+  else if (!hasLeft) { dx = -22; dy = 0; }
+  else { dx = 16; dy = -16; }
+  return { dx, dy };
+}
+
+function MorseMachine() {
+  const [currentCode, setCurrentCode] = useState('');
+  const [decodedText, setDecodedText] = useState('');
+  const [isFading, setIsFading] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
+
+  const nodePos = useMemo(() => buildLayout(), []);
+  const edges = useMemo(() => buildEdges(nodePos), [nodePos]);
+  const labelOffsets = useMemo(() => {
+    const map = {};
+    PLACEMENTS.forEach(([letter]) => {
+      map[letter] = labelOffset(letter, nodePos, edges);
+    });
+    return map;
+  }, [nodePos, edges]);
+
+  const pathLetters = useMemo(() => {
+    const letters = [''];
+    let current = '';
+    for (const ch of currentCode) {
+      const node = MORSE_TREE[current];
+      if (node?.children?.[ch]) {
+        current = node.children[ch];
+        letters.push(current);
+      } else break;
+    }
+    return letters;
+  }, [currentCode]);
+
+  const activeEdgeCodes = useMemo(() => {
+    const set = new Set();
+    let code = '';
+    for (const ch of currentCode) { code += ch; set.add(code); }
+    return set;
+  }, [currentCode]);
+
+  const currentLetter = MORSE_MAP[currentCode] || '';
+
+  const handleDit = useCallback(() => {
+    if (currentCode.length >= 4 || isFading) return;
+    const cur = pathLetters[pathLetters.length - 1];
+    if (!MORSE_TREE[cur]?.children?.['.']) return;
+    setCurrentCode(p => p + '.');
+    setAnimKey(k => k + 1);
+  }, [currentCode, isFading, pathLetters]);
+
+  const handleDah = useCallback(() => {
+    if (currentCode.length >= 4 || isFading) return;
+    const cur = pathLetters[pathLetters.length - 1];
+    if (!MORSE_TREE[cur]?.children?.['-']) return;
+    setCurrentCode(p => p + '-');
+    setAnimKey(k => k + 1);
+  }, [currentCode, isFading, pathLetters]);
+
+  const handleCommit = useCallback(() => {
+    if (currentCode === '' || isFading) return;
+    const letter = MORSE_MAP[currentCode];
+    if (letter) setDecodedText(t => t + letter);
+    setIsFading(true);
+    setTimeout(() => { setCurrentCode(''); setIsFading(false); }, 320);
+  }, [currentCode, isFading]);
+
+  const handleWordSpace = useCallback(() => {
+    if (isFading) return;
+    if (currentCode !== '') {
+      const letter = MORSE_MAP[currentCode];
+      if (letter) setDecodedText(t => t + letter + ' ');
+      setIsFading(true);
+      setTimeout(() => { setCurrentCode(''); setIsFading(false); }, 320);
+    } else {
+      setDecodedText(t => t + ' ');
+    }
+  }, [currentCode, isFading]);
+
+  const handleBack = useCallback(() => {
+    if (isFading) return;
+    if (currentCode.length > 0) {
+      setCurrentCode(p => p.slice(0, -1));
+      setAnimKey(k => k + 1);
+    } else if (decodedText.length > 0) {
+      setDecodedText(t => t.slice(0, -1));
+    }
+  }, [currentCode, decodedText, isFading]);
+
+  const handleClearInput = useCallback(() => {
+    if (isFading) return;
+    setCurrentCode('');
+  }, [isFading]);
+
+  const handleClearOutput = useCallback(() => {
+    setDecodedText('');
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === '.') { e.preventDefault(); handleDit(); }
+      else if (e.key === '-') { e.preventDefault(); handleDah(); }
+      else if (e.key === 'Enter') { e.preventDefault(); handleCommit(); }
+      else if (e.key === ' ') { e.preventDefault(); handleWordSpace(); }
+      else if (e.key === 'Backspace') { e.preventDefault(); handleBack(); }
+      else if (e.key === 'Escape') { e.preventDefault(); handleClearInput(); }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleDit, handleDah, handleCommit, handleBack, handleWordSpace, handleClearInput]);
+
+  const VW = gx(14) + PAD_X;
+  const VH = gy(6) + 16;
+  const NODE_R = 10;
+  const CAPSULE_W = 28;
+  const CAPSULE_H = 11;
+
+  return (
+    <div style={S.wrap}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes traceDraw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes glowPulse { 0%,100% { opacity: 0.25; } 50% { opacity: 0.7; } }
+        @keyframes cursorBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes letterPop { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+        button { font-family: 'JetBrains Mono', monospace; }
+        button:active { transform: scale(0.93) !important; }
+      `}</style>
+
+      <div style={S.plateTitle}>
+        <div style={S.plateLine} />
+        <span style={S.plateTitleText}>MORSE CODE</span>
+        <div style={S.plateLine} />
+      </div>
+
+      <div style={S.panel}>
+        <svg viewBox={`0 0 ${VW} ${VH}`} style={S.svg}>
+          <defs>
+            <filter id="glow"><feGaussianBlur stdDeviation="4" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <filter id="strongGlow"><feGaussianBlur stdDeviation="7" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <filter id="metalBump" x="-10%" y="-10%" width="120%" height="120%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="0.8" result="blur" />
+              <feOffset dx="0.4" dy="0.8" result="offset" />
+              <feComposite in="SourceGraphic" in2="offset" operator="over" />
+            </filter>
+            <radialGradient id="ballInactive"><stop offset="0%" stopColor="#3a3a48" /><stop offset="100%" stopColor="#1e1e28" /></radialGradient>
+            <radialGradient id="ballActive"><stop offset="0%" stopColor="#f5d35e" /><stop offset="60%" stopColor="#c9a227" /><stop offset="100%" stopColor="#8a6f1a" /></radialGradient>
+            <radialGradient id="ballOnPath"><stop offset="0%" stopColor="#6b5a20" /><stop offset="100%" stopColor="#2c2518" /></radialGradient>
+            <linearGradient id="capsuleInactive"><stop offset="0%" stopColor="#3a3a48" /><stop offset="100%" stopColor="#1e1e28" /></linearGradient>
+            <linearGradient id="capsuleActive"><stop offset="0%" stopColor="#f5d35e" /><stop offset="100%" stopColor="#c9a227" /></linearGradient>
+            <linearGradient id="capsuleOnPath"><stop offset="0%" stopColor="#6b5a20" /><stop offset="100%" stopColor="#2c2518" /></linearGradient>
+          </defs>
+
+          {edges.map(({ from, to, code }) => {
+            const n1 = nodePos[from], n2 = nodePos[to];
+            return <path key={`b-${code}`} d={orthoPath(n1.x, n1.y, n2.x, n2.y)} fill="none" stroke="#151520" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />;
+          })}
+          {edges.map(({ from, to, code }) => {
+            const n1 = nodePos[from], n2 = nodePos[to];
+            return <path key={`g-${code}`} d={orthoPath(n1.x, n1.y, n2.x, n2.y)} fill="none" stroke="#1e1e2c" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />;
+          })}
+
+          {!isFading && edges.filter(({ code }) => activeEdgeCodes.has(code)).map(({ from, to, code }) => {
+            const n1 = nodePos[from], n2 = nodePos[to];
+            const d = orthoPath(n1.x, n1.y, n2.x, n2.y);
+            const len = orthoLen(n1.x, n1.y, n2.x, n2.y);
+            const isLatest = code === currentCode;
+            const animStyle = isLatest ? { '--len': len, animation: `traceDraw 0.38s cubic-bezier(0.22,0.61,0.36,1) forwards` } : {};
+            return (
+              <g key={`a-${code}-${animKey}`}>
+                <path d={d} fill="none" stroke="#c9a227" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)" opacity={0.35} strokeDasharray={isLatest ? len : 'none'} strokeDashoffset={isLatest ? len : 0} style={animStyle} />
+                <path d={d} fill="none" stroke="#f5d35e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={isLatest ? len : 'none'} strokeDashoffset={isLatest ? len : 0} style={animStyle} />
+              </g>
+            );
+          })}
+
+          {isFading && edges.filter(({ code }) => activeEdgeCodes.has(code)).map(({ from, to, code }) => {
+            const n1 = nodePos[from], n2 = nodePos[to];
+            const d = orthoPath(n1.x, n1.y, n2.x, n2.y);
+            return (
+              <g key={`f-${code}`} style={{ animation: 'fadeOut 0.32s ease-out forwards' }}>
+                <path d={d} fill="none" stroke="#c9a227" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)" opacity={0.35} />
+                <path d={d} fill="none" stroke="#f5d35e" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+              </g>
+            );
+          })}
+
+          {Object.entries(nodePos).map(([letter, pos]) => {
+            const isRoot = letter === '';
+            const isEndpoint = pathLetters[pathLetters.length - 1] === letter && currentCode !== '' && !isFading;
+            const isOnPath = pathLetters.includes(letter) && !isFading && currentCode !== '';
+            const isDit = pos.symbol === '.';
+            const isDah = pos.symbol === '-';
+            const lo = labelOffsets[letter] || { dx: 0, dy: -18 };
+
+            const fillName = isEndpoint ? (isDit ? 'url(#ballActive)' : 'url(#capsuleActive)')
+                           : isOnPath ? (isDit ? 'url(#ballOnPath)' : 'url(#capsuleOnPath)')
+                           : (isDit ? 'url(#ballInactive)' : 'url(#capsuleInactive)');
+            const strokeColor = isEndpoint ? '#f5d35e' : isOnPath ? '#8a6f1a' : '#2a2a38';
+            const filterAttr = isEndpoint ? 'url(#strongGlow)' : 'url(#metalBump)';
+
+            return (
+              <g key={`n-${letter}`}>
+                {!isRoot && (
+                  isDit ? (
+                    <circle cx={pos.x + 0.8} cy={pos.y + 1.5} r={NODE_R} fill="rgba(0,0,0,0.35)" />
+                  ) : (
+                    <rect x={pos.x - CAPSULE_W/2 + 0.8} y={pos.y - CAPSULE_H/2 + 1.5} width={CAPSULE_W} height={CAPSULE_H} rx={CAPSULE_H/2} fill="rgba(0,0,0,0.35)" />
+                  )
+                )}
+
+                {isRoot ? (
+                  <g>
+                    <polygon
+                      points={`${pos.x},${pos.y - 13} ${pos.x + 12},${pos.y + 7} ${pos.x - 12},${pos.y + 7}`}
+                      fill={isOnPath ? '#2c2518' : '#1a1a28'}
+                      stroke={isOnPath ? '#c9a227' : '#3a3a48'}
+                      strokeWidth={1.5}
+                      filter={isOnPath ? 'url(#glow)' : 'url(#metalBump)'}
+                    />
+                    {currentCode === '' && !isFading && (
+                      <polygon
+                        points={`${pos.x},${pos.y - 13} ${pos.x + 12},${pos.y + 7} ${pos.x - 12},${pos.y + 7}`}
+                        fill="none" stroke="#c9a227" strokeWidth={1}
+                        style={{ animation: 'glowPulse 2.5s ease-in-out infinite' }}
+                      />
+                    )}
+                  </g>
+                ) : isDit ? (
+                  <g>
+                    <circle cx={pos.x} cy={pos.y} r={NODE_R}
+                      fill={fillName} stroke={strokeColor} strokeWidth={isEndpoint ? 1.5 : 0.8}
+                      filter={filterAttr}
+                    />
+                    <ellipse cx={pos.x - 2} cy={pos.y - 3} rx={3.5} ry={2.5}
+                      fill={isEndpoint ? 'rgba(255,255,220,0.45)' : 'rgba(255,255,255,0.06)'}
+                    />
+                  </g>
+                ) : (
+                  <rect x={pos.x - CAPSULE_W/2} y={pos.y - CAPSULE_H/2}
+                    width={CAPSULE_W} height={CAPSULE_H} rx={CAPSULE_H/2}
+                    fill={fillName} stroke={strokeColor} strokeWidth={isEndpoint ? 1.5 : 0.8}
+                    filter={filterAttr}
+                  />
+                )}
+
+                {letter && (
+                  <text x={pos.x + lo.dx} y={pos.y + lo.dy}
+                    fill={isEndpoint ? '#f5d35e' : isOnPath ? '#d4aa30' : '#5e5e72'}
+                    fontSize={isEndpoint ? 13 : 11}
+                    fontFamily="Cinzel, serif"
+                    fontWeight={isEndpoint ? 700 : 500}
+                    textAnchor="middle" dominantBaseline="central"
+                    filter={isEndpoint ? 'url(#glow)' : 'none'}
+                    style={{ pointerEvents: 'none', transition: 'fill 0.2s' }}
+                  >
+                    {letter}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div style={S.inputRow}>
+        <div style={S.morseDisplay}>
+          {currentCode ? currentCode.split('').map((c, i) => (
+            <span key={i} style={c === '.' ? S.ditSym : S.dahSym}>
+              {c === '.' ? '·' : '—'}
+            </span>
+          )) : (
+            <span style={S.emptyHint}>· / —</span>
+          )}
+        </div>
+        {currentLetter ? (
+          <span key={currentCode} style={{ ...S.resolvedLetter, animation: 'letterPop 0.25s ease-out' }}>{currentLetter}</span>
+        ) : currentCode.length > 0 ? (
+          <span style={S.unknownLetter}>?</span>
+        ) : null}
+        {currentCode && (
+          <button style={S.inlineClear} onClick={handleClearInput} onMouseDown={e => e.preventDefault()} title="Clear current input (Esc)">✕</button>
+        )}
+      </div>
+
+      <div style={S.outputRow}>
+        <div style={S.outputPanel}>
+          <div style={S.outputInner}>
+            {decodedText ? (
+              <span style={S.outputText}>{decodedText}</span>
+            ) : (
+              <span style={S.outputEmpty}>···</span>
+            )}
+            <span style={S.blinkCursor}>│</span>
+          </div>
+        </div>
+        {decodedText && (
+          <button style={S.outputClear} onClick={handleClearOutput} onMouseDown={e => e.preventDefault()} title="Clear decoded text">✕</button>
+        )}
+      </div>
+
+      <div style={S.row1}>
+        <button style={S.btnDit} onClick={handleDit} onMouseDown={e => e.preventDefault()}>
+          <span style={S.btnDitDot} />
+          <span style={S.btnLabelSub}>dit</span>
+        </button>
+        <button style={S.btnDah} onClick={handleDah} onMouseDown={e => e.preventDefault()}>
+          <span style={S.btnDahBar} />
+          <span style={S.btnLabelSub}>dah</span>
+        </button>
+      </div>
+
+      <div style={S.row2}>
+        <button style={S.btnFn} onClick={handleCommit} onMouseDown={e => e.preventDefault()} title="Confirm letter (Enter)">
+          <span style={S.fnIcon}>↵</span>
+          <span style={S.fnLabel}>confirm</span>
+        </button>
+        <button style={S.btnFn} onClick={handleWordSpace} onMouseDown={e => e.preventDefault()} title="Word space (Space)">
+          <span style={S.fnIcon}>␣</span>
+          <span style={S.fnLabel}>space</span>
+        </button>
+        <button style={S.btnFn} onClick={handleBack} onMouseDown={e => e.preventDefault()} title="Undo (Backspace)">
+          <span style={S.fnIcon}>⌫</span>
+          <span style={S.fnLabel}>undo</span>
+        </button>
+      </div>
+
+      <div style={S.kbHint}>
+        <span style={S.kbKey}>.</span> dit&ensp;
+        <span style={S.kbKey}>-</span> dah&ensp;
+        <span style={S.kbKey}>⏎</span> confirm&ensp;
+        <span style={S.kbKey}>␣</span> word space&ensp;
+        <span style={S.kbKey}>⌫</span> undo&ensp;
+        <span style={S.kbKey}>esc</span> clear input
+      </div>
+    </div>
+  );
+}
+
+const gold = '#c9a227';
+const goldBright = '#f5d35e';
+
+const S = {
+  wrap: {
+    minHeight: '100vh',
+    background: '#08080e',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '20px 12px 32px',
+    fontFamily: "'JetBrains Mono', monospace",
+    color: '#9a9aaa',
+  },
+  plateTitle: {
+    display: 'flex', alignItems: 'center', gap: 16,
+    marginBottom: 12, width: '100%', maxWidth: 700,
+  },
+  plateLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, #2a2a3a, transparent)' },
+  plateTitleText: { fontFamily: "'Cinzel', serif", fontSize: 14, letterSpacing: 10, color: '#6a6a7e', fontWeight: 600 },
+  panel: {
+    width: '100%', maxWidth: 780,
+    background: 'linear-gradient(180deg, #0d0d15 0%, #0a0a12 50%, #0d0d15 100%)',
+    borderRadius: 14, border: '1px solid #1a1a28',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.6)',
+    padding: '8px 4px',
+  },
+  svg: { width: '100%', height: 'auto', display: 'block' },
+  inputRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    gap: 16, marginTop: 14, minHeight: 44,
+  },
+  morseDisplay: { display: 'flex', gap: 8, alignItems: 'center' },
+  ditSym: { color: goldBright, fontSize: 26, fontWeight: 600, textShadow: `0 0 12px ${gold}` },
+  dahSym: { color: goldBright, fontSize: 26, fontWeight: 600, textShadow: `0 0 12px ${gold}` },
+  emptyHint: { color: '#3a3a4e', fontSize: 18 },
+  resolvedLetter: {
+    fontFamily: "'Cinzel', serif", fontSize: 30, fontWeight: 700,
+    color: gold, textShadow: `0 0 20px rgba(201,162,39,0.4)`, display: 'inline-block',
+  },
+  unknownLetter: { fontFamily: "'Cinzel', serif", fontSize: 26, color: '#3a3a4a' },
+  inlineClear: {
+    background: 'none', border: '1px solid #2a2a3a', borderRadius: 6,
+    color: '#5a5a6e', fontSize: 12, padding: '4px 8px', cursor: 'pointer',
+    transition: 'all 0.12s', marginLeft: 4,
+  },
+  outputRow: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    width: '100%', maxWidth: 560, marginTop: 10,
+  },
+  outputPanel: { flex: 1 },
+  outputInner: {
+    background: '#0b0b14', border: '1px solid #181828', borderRadius: 8,
+    padding: '12px 18px', minHeight: 46, display: 'flex', alignItems: 'center',
+    boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.4)',
+  },
+  outputText: {
+    fontFamily: "'Cinzel', serif", fontSize: 20, fontWeight: 600,
+    color: '#ddd8c4', letterSpacing: 5, wordBreak: 'break-all',
+  },
+  outputEmpty: { color: '#181828', fontSize: 20 },
+  blinkCursor: { color: gold, fontSize: 20, marginLeft: 2, animation: 'cursorBlink 1s step-end infinite', opacity: 0.5 },
+  outputClear: {
+    background: 'none', border: '1px solid #2a2a3a', borderRadius: 6,
+    color: '#5a5a6e', fontSize: 12, padding: '6px 10px', cursor: 'pointer',
+    transition: 'all 0.12s', flexShrink: 0,
+  },
+  row1: {
+    display: 'flex', gap: 12, marginTop: 16, justifyContent: 'center',
+  },
+  btnDit: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+    background: 'linear-gradient(180deg, #141420, #0e0e1a)',
+    border: '1px solid #2a2a3a', borderRadius: 12,
+    padding: '14px 36px', cursor: 'pointer', transition: 'all 0.12s',
+  },
+  btnDitDot: {
+    width: 12, height: 12, borderRadius: '50%', background: gold,
+    boxShadow: `0 0 10px rgba(201,162,39,0.5)`, display: 'block',
+  },
+  btnDah: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+    background: 'linear-gradient(180deg, #141420, #0e0e1a)',
+    border: '1px solid #2a2a3a', borderRadius: 12,
+    padding: '14px 36px', cursor: 'pointer', transition: 'all 0.12s',
+  },
+  btnDahBar: {
+    width: 30, height: 6, borderRadius: 3, background: gold,
+    boxShadow: `0 0 10px rgba(201,162,39,0.5)`, display: 'block',
+  },
+  btnLabelSub: { fontSize: 10, letterSpacing: 2, color: '#6a6a7e', textTransform: 'uppercase' },
+  row2: {
+    display: 'flex', gap: 8, marginTop: 10, justifyContent: 'center',
+  },
+  btnFn: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+    background: 'linear-gradient(180deg, #111118, #0c0c14)',
+    border: '1px solid #1e1e2c', borderRadius: 8,
+    padding: '8px 18px', cursor: 'pointer', transition: 'all 0.12s',
+  },
+  fnIcon: { fontSize: 16, color: '#6a6a7e' },
+  fnLabel: { fontSize: 8, letterSpacing: 1.5, color: '#4a4a5e', textTransform: 'uppercase' },
+  kbHint: {
+    marginTop: 16, fontSize: 10, color: '#4a4a5e', letterSpacing: 1,
+    textAlign: 'center', lineHeight: 2.2, maxWidth: 520,
+  },
+  kbKey: {
+    display: 'inline-block', background: '#121220', border: '1px solid #22223a',
+    borderRadius: 3, padding: '1px 6px', fontSize: 9, color: '#6a6a7e',
+    marginLeft: 6,
+  },
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<MorseMachine />);
+</script>
+</body>
+</html>

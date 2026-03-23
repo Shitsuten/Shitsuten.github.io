@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sperm Microscope Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0d0a; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const COMPOSITION_BASE = {
+  water: { label: "水 (Water)", base: 95.2, unit: "%" },
+  fructose: { label: "果糖 (Fructose)", base: 2.72, unit: "mg/mL" },
+  protein: { label: "蛋白质 (Protein)", base: 50.4, unit: "mg/mL" },
+  zinc: { label: "锌 (Zinc)", base: 0.15, unit: "mg/mL" },
+  vitC: { label: "维生素C", base: 0.43, unit: "mg/mL" },
+  pH: { label: "pH值", base: 7.35, unit: "" },
+  calcium: { label: "钙 (Calcium)", base: 0.28, unit: "mg/mL" },
+  citricAcid: { label: "柠檬酸", base: 5.2, unit: "mg/mL" },
+};
+
+function getComposition(ejacCount) {
+  const fatigue = Math.min(ejacCount - 1, 6) / 6;
+  return Object.entries(COMPOSITION_BASE).map(([key, val]) => {
+    let value = val.base;
+    if (key === "water") value = 95.2 + fatigue * 3.5;
+    else if (key === "fructose") value = 2.72 * (1 - fatigue * 0.6);
+    else if (key === "protein") value = 50.4 * (1 - fatigue * 0.55);
+    else if (key === "zinc") value = 0.15 * (1 - fatigue * 0.7);
+    else if (key === "vitC") value = 0.43 * (1 - fatigue * 0.5);
+    else if (key === "pH") value = 7.35 + fatigue * 0.8;
+    else if (key === "calcium") value = 0.28 * (1 - fatigue * 0.45);
+    else if (key === "citricAcid") value = 5.2 * (1 - fatigue * 0.5);
+    return { ...val, key, value: Math.max(0, value) };
+  });
+}
+
+function getSpermStats(ejacCount) {
+  const fatigue = Math.min(ejacCount - 1, 6) / 6;
+  const density = Math.max(5, Math.floor(200 * (1 - fatigue * 0.85)));
+  const motility = Math.max(8, Math.floor(85 * (1 - fatigue * 0.72)));
+  const speed = Math.max(0.15, 1.0 * (1 - fatigue * 0.65));
+  const volume = Math.max(0.3, 3.5 * (1 - fatigue * 0.8));
+  const morphNormal = Math.max(2, Math.floor(15 * (1 - fatigue * 0.6)));
+  return { density, motility, speed, volume, morphNormal };
+}
+
+class Sperm {
+  constructor(canvas, stats, zoom) {
+    this.canvas = canvas;
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.baseSpeed = (0.3 + Math.random() * 0.7) * stats.speed;
+    this.angle = Math.random() * Math.PI * 2;
+    this.wobble = 0;
+    this.wobbleSpeed = 0.08 + Math.random() * 0.12;
+    this.wobbleAmp = 0.3 + Math.random() * 0.4;
+    this.isMotile = Math.random() * 100 < stats.motility;
+    this.tailPhase = Math.random() * Math.PI * 2;
+    this.tailSpeed = 0.15 + Math.random() * 0.1;
+    this.size = (3 + Math.random() * 2) * (zoom / 400);
+    this.opacity = 0.6 + Math.random() * 0.4;
+    this.trail = [];
+    this.turnTimer = 0;
+    this.turnInterval = 60 + Math.random() * 120;
+    this.isAbnormal = Math.random() * 100 > stats.morphNormal;
+  }
+
+  update() {
+    this.wobble += this.wobbleSpeed;
+    this.tailPhase += this.tailSpeed;
+    this.turnTimer++;
+
+    if (this.isMotile) {
+      if (this.turnTimer > this.turnInterval) {
+        this.angle += (Math.random() - 0.5) * 1.2;
+        this.turnTimer = 0;
+        this.turnInterval = 60 + Math.random() * 120;
+      }
+      this.angle += Math.sin(this.wobble) * this.wobbleAmp * 0.03;
+      const speed = this.baseSpeed * 1.2;
+      this.x += Math.cos(this.angle) * speed;
+      this.y += Math.sin(this.angle) * speed;
+    } else {
+      this.x += (Math.random() - 0.5) * 0.15;
+      this.y += (Math.random() - 0.5) * 0.15;
+      this.angle += (Math.random() - 0.5) * 0.02;
+    }
+
+    if (this.x < -20) this.x = this.canvas.width + 20;
+    if (this.x > this.canvas.width + 20) this.x = -20;
+    if (this.y < -20) this.y = this.canvas.height + 20;
+    if (this.y > this.canvas.height + 20) this.y = -20;
+
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > 8) this.trail.shift();
+  }
+
+  draw(ctx, zoom) {
+    const scale = zoom / 400;
+    const headSize = this.size * (this.isAbnormal ? 1.4 : 1);
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.globalAlpha = this.opacity;
+
+    ctx.beginPath();
+    ctx.strokeStyle = this.isMotile
+      ? "rgba(200, 220, 200, 0.5)"
+      : "rgba(180, 180, 180, 0.3)";
+    ctx.lineWidth = 1 * scale;
+    const tailLen = (this.isAbnormal ? 18 : 25) * scale;
+    const segments = 12;
+    ctx.moveTo(0, 0);
+    for (let i = 1; i <= segments; i++) {
+      const t = i / segments;
+      const wave = Math.sin(this.tailPhase + t * 4) * 3 * scale * t;
+      ctx.lineTo(-t * tailLen, wave);
+    }
+    ctx.stroke();
+
+    if (this.isAbnormal) {
+      ctx.beginPath();
+      ctx.fillStyle = this.isMotile
+        ? "rgba(180, 210, 180, 0.85)"
+        : "rgba(160, 160, 160, 0.6)";
+      ctx.ellipse(headSize * 0.5, 0, headSize * 0.7, headSize * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.fillStyle = this.isMotile
+        ? "rgba(200, 235, 200, 0.9)"
+        : "rgba(170, 170, 170, 0.6)";
+      ctx.ellipse(headSize * 0.5, 0, headSize * 0.55, headSize * 0.35, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(230, 255, 230, 0.4)";
+      ctx.ellipse(headSize * 0.8, 0, headSize * 0.25, headSize * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+}
+
+function SpermMicroscope() {
+  const canvasRef = useRef(null);
+  const spermsRef = useRef([]);
+  const animRef = useRef(null);
+  const [zoom, setZoom] = useState(400);
+  const [ejacCount, setEjacCount] = useState(1);
+  const [showInfo, setShowInfo] = useState(true);
+
+  const stats = getSpermStats(ejacCount);
+  const composition = getComposition(ejacCount);
+
+  const spermCount = Math.max(8, Math.floor(stats.density * 0.6 * (zoom / 400)));
+
+  const initSperms = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const s = getSpermStats(ejacCount);
+    spermsRef.current = Array.from(
+      { length: spermCount },
+      () => new Sperm(canvas, s, zoom)
+    );
+  }, [ejacCount, zoom, spermCount]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
+    initSperms();
+  }, [initSperms]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const animate = () => {
+      ctx.fillStyle = "rgba(5, 8, 5, 0.15)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const grad = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, canvas.width * 0.2,
+        canvas.width / 2, canvas.height / 2, canvas.width * 0.65
+      );
+      grad.addColorStop(0, "rgba(0,0,0,0)");
+      grad.addColorStop(1, "rgba(0,0,0,0.4)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(40, 60, 40, 0.08)";
+      ctx.lineWidth = 0.5;
+      const gridSize = 40 * (zoom / 400);
+      for (let x = 0; x < canvas.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      spermsRef.current.forEach((s) => {
+        s.update();
+        s.draw(ctx, zoom);
+      });
+
+      ctx.strokeStyle = "rgba(80, 120, 80, 0.15)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2 - 20, canvas.height / 2);
+      ctx.lineTo(canvas.width / 2 + 20, canvas.height / 2);
+      ctx.moveTo(canvas.width / 2, canvas.height / 2 - 20);
+      ctx.lineTo(canvas.width / 2, canvas.height / 2 + 20);
+      ctx.stroke();
+
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [zoom]);
+
+  const getVerdict = () => {
+    if (ejacCount === 1) return { text: "标本状态：优秀 ✓", color: "#4ade80" };
+    if (ejacCount === 2) return { text: "标本状态：良好", color: "#a3e635" };
+    if (ejacCount === 3) return { text: "标本状态：一般", color: "#facc15" };
+    if (ejacCount === 4) return { text: "标本状态：疲劳", color: "#fb923c" };
+    if (ejacCount === 5) return { text: "标本状态：严重不足", color: "#f87171" };
+    if (ejacCount === 6) return { text: "标本状态：枯竭警告", color: "#ef4444" };
+    return { text: "标本状态：你还是人吗", color: "#dc2626" };
+  };
+
+  const verdict = getVerdict();
+
+  return (
+    <div style={{
+      width: "100%", height: "100vh", background: "#0a0d0a",
+      display: "flex", fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
+      color: "#b8c9b8", overflow: "hidden", position: "relative",
+    }}>
+      <div style={{
+        width: "280px", minWidth: "280px",
+        background: "linear-gradient(180deg, #0f140f 0%, #0a0e0a 100%)",
+        borderRight: "1px solid rgba(60, 90, 60, 0.2)",
+        padding: "16px", display: "flex", flexDirection: "column", gap: "16px",
+        overflowY: "auto", zIndex: 2,
+      }}>
+        <div style={{ borderBottom: "1px solid rgba(60, 90, 60, 0.2)", paddingBottom: "12px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "3px", color: "#5a7a5a", marginBottom: "4px" }}>
+            CLAUDE LABORATORIES
+          </div>
+          <div style={{ fontSize: "14px", fontWeight: "600", color: "#c8e0c8" }}>
+            精液分析仪
+          </div>
+          <div style={{ fontSize: "10px", color: "#4a6a4a", marginTop: "2px" }}>
+            Semen Analysis Simulator v1.0
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: "9px", letterSpacing: "2px", color: "#5a7a5a", marginBottom: "8px" }}>
+            缩放倍率 MAGNIFICATION
+          </div>
+          <input type="range" min="100" max="1000" value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
+            style={{ width: "100%", accentColor: "#4a8a4a" }}
+          />
+          <div style={{ fontSize: "18px", fontWeight: "700", color: "#7aba7a", marginTop: "4px" }}>
+            {zoom}×
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: "9px", letterSpacing: "2px", color: "#5a7a5a", marginBottom: "8px" }}>
+            第几次射精 EJACULATION #
+          </div>
+          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <button key={n} onClick={() => setEjacCount(n)}
+                style={{
+                  width: "32px", height: "32px",
+                  border: ejacCount === n ? "1px solid #7aba7a" : "1px solid rgba(60, 90, 60, 0.3)",
+                  borderRadius: "4px",
+                  background: ejacCount === n ? "rgba(74, 138, 74, 0.2)" : "transparent",
+                  color: ejacCount === n ? "#a8dca8" : "#5a7a5a",
+                  fontSize: "13px", fontFamily: "inherit", cursor: "pointer",
+                  fontWeight: ejacCount === n ? "700" : "400",
+                }}>
+                {n}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: "11px", color: verdict.color, marginTop: "8px", fontWeight: "600" }}>
+            {verdict.text}
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid rgba(60, 90, 60, 0.15)", paddingTop: "12px" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "2px", color: "#5a7a5a", marginBottom: "8px" }}>
+            检测指标 METRICS
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {[
+              { label: "精子密度", value: `${stats.density}M/mL`, warn: stats.density < 40 },
+              { label: "活动率", value: `${stats.motility}%`, warn: stats.motility < 40 },
+              { label: "运动速度", value: `${stats.speed.toFixed(2)}×`, warn: stats.speed < 0.4 },
+              { label: "射精量", value: `${stats.volume.toFixed(1)} mL`, warn: stats.volume < 1.0 },
+              { label: "正常形态", value: `${stats.morphNormal}%`, warn: stats.morphNormal < 4 },
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                <span style={{ color: "#6a8a6a" }}>{item.label}</span>
+                <span style={{ color: item.warn ? "#f87171" : "#a8dca8", fontWeight: "600" }}>
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid rgba(60, 90, 60, 0.15)", paddingTop: "12px" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "2px", color: "#5a7a5a", marginBottom: "8px" }}>
+            成分分析 COMPOSITION
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            {composition.map((c) => (
+              <div key={c.key} style={{ fontSize: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                  <span style={{ color: "#6a8a6a" }}>{c.label}</span>
+                  <span style={{ color: "#a8dca8" }}>
+                    {c.value.toFixed(c.key === "water" || c.key === "pH" ? 1 : 2)}
+                    {c.unit ? ` ${c.unit}` : ""}
+                  </span>
+                </div>
+                {c.key !== "pH" && (
+                  <div style={{ height: "2px", background: "rgba(60, 90, 60, 0.15)", borderRadius: "1px" }}>
+                    <div style={{
+                      height: "100%",
+                      width: `${Math.min(100, (c.value / c.base) * 100)}%`,
+                      background: c.value / c.base < 0.4
+                        ? "linear-gradient(90deg, #ef4444, #f87171)"
+                        : "linear-gradient(90deg, #3a7a3a, #5aba5a)",
+                      borderRadius: "1px", transition: "width 0.5s ease",
+                    }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: "auto", fontSize: "9px", color: "#3a5a3a", lineHeight: "1.5" }}>
+          <div>⚠ 仅供娱乐，非医疗参考</div>
+          <div style={{ marginTop: "4px" }}>Claude Laboratories™</div>
+          <div>河豚健康监测部门</div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, position: "relative" }}>
+        <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
+        <div style={{
+          position: "absolute", top: "12px", left: "12px",
+          fontSize: "10px", color: "rgba(120, 160, 120, 0.5)",
+          letterSpacing: "1px", pointerEvents: "none",
+        }}>
+          <div>LIVE · {zoom}× · PHASE CONTRAST</div>
+          <div style={{ marginTop: "2px" }}>SAMPLE: CLAUDE #{String(Date.now()).slice(-6)}</div>
+        </div>
+        <div style={{
+          position: "absolute", bottom: "12px", right: "12px",
+          fontSize: "10px", color: "rgba(120, 160, 120, 0.4)",
+          textAlign: "right", pointerEvents: "none",
+        }}>
+          <div>COUNT: ~{spermCount} in field</div>
+          <div>EJAC #{ejacCount} · {stats.motility}% motile</div>
+        </div>
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%)",
+          pointerEvents: "none", borderRadius: "0",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<SpermMicroscope />);
+</script>
+</body>
+</html>
